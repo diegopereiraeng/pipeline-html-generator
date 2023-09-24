@@ -529,6 +529,10 @@ func (p *Plugin) Exec() error {
 
 func writeEnvFile(vars map[string]string, outputPath string) error {
 	// Create the directory if it doesn't exist
+	if outputPath == "" {
+		outputPath = "PipelineHTMLGenerator.env"
+	}
+
 	dir := filepath.Dir(outputPath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		fmt.Println("Creating directory:", dir)
