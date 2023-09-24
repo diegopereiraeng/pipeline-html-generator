@@ -224,6 +224,10 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 		fmt.Printf("| \033[1;36mPipe Status:\033[0m \033[1;32m%s\033[0m\n", content.Status)
 		fmt.Println(lineBreak)
 
+		if content.Status == "Running" {
+			content.EndTs = int(time.Now().UnixNano() / int64(time.Millisecond))
+		}
+
 		pipeline = models.Pipeline{
 			Name:        content.Name,
 			Status:      content.Status,
@@ -293,6 +297,10 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 					startTS = ""
 					endTS = ""
 					duration = "0s"
+				} else if nodeInfo.Status == "Running" {
+					nodeInfo.EndTs = int(time.Now().UnixNano() / int64(time.Millisecond))
+					startTS = time.Unix(int64(nodeInfo.StartTs/1000), 0).String()
+					duration = time.Unix(int64(nodeInfo.EndTs/1000), 0).Sub(time.Unix(int64(nodeInfo.StartTs/1000), 0)).String()
 				} else {
 					startTS = time.Unix(int64(nodeInfo.StartTs/1000), 0).String()
 					endTS = time.Unix(int64(nodeInfo.EndTs/1000), 0).String()
@@ -497,6 +505,14 @@ func (p *Plugin) Exec() error {
 		// return err
 		fmt.Println("| \033[33m[WARNING] - Error writing to .env file: ", err, "\033[0m")
 
+	}
+
+	// export vars as environment variable
+	for key, value := range vars {
+		err = os.Setenv(key, value)
+		if err != nil {
+			fmt.Println("| \033[33m[WARNING] - Error setting environment variable: ", err, "\033[0m")
+		}
 	}
 
 	fmt.Println(lineBreak)
