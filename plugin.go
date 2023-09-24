@@ -447,7 +447,7 @@ func (p *Plugin) Exec() error {
 		// return err
 	}
 	fmt.Println(lineBreak)
-	if pipeline.Status == "Success" {
+	if pipeline.Status != "" {
 		fmt.Println("| \033[1;32mLast successful execution found\033[0m")
 		fmt.Println(lineBreak)
 		fmt.Printf("| \033[1;36mPipeline Name:\033[0m \033[1;32m%s\033[0m\n", pipeline.Name)
