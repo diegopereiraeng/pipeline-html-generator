@@ -1,6 +1,6 @@
 module pipeline-html-generator
 
-go 1.21.0
+go 1.21
 
 require github.com/urfave/cli v1.22.14
 
