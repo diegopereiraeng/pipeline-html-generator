@@ -497,21 +497,26 @@ func (p *Plugin) Exec() error {
 		"PIPELINE_STAGECOUNT":  strconv.Itoa(pipeline.StageCount),
 		"PIPELINE_STEPCOUNT":   strconv.Itoa(pipeline.StepCount),
 		"PIPELINE_MESSAGE":     pipeline.Message,
-		"HTML_REPORT":          dashHTML,
+		"HTML_REPORT":          strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(dashHTML, "\n", ""), "	", ""), "		", ""), "<!DOCTYPE html>", ""),
 	}
+	if os.Getenv("DRONE_OUTPUT") == "" {
 
-	err = writeEnvFile(vars, os.Getenv("DRONE_OUTPUT"))
-	if err != nil {
-		// return err
-		fmt.Println("| \033[33m[WARNING] - Error writing to .env file: ", err, "\033[0m")
-
-	}
-
-	// export vars as environment variable
-	for key, value := range vars {
-		err = os.Setenv(key, value)
+		f, err := os.Create("PipelineHTMLGenerator.env")
 		if err != nil {
-			fmt.Println("| \033[33m[WARNING] - Error setting environment variable: ", err, "\033[0m")
+			fmt.Println("Error:", err)
+			return err
+		}
+
+		for key, value := range vars {
+			f.WriteString(fmt.Sprintf("export %s='%s'\n", key, value))
+		}
+		defer f.Close()
+	} else {
+		err = writeEnvFile(vars, os.Getenv("DRONE_OUTPUT"))
+		if err != nil {
+			// return err
+			fmt.Println("| \033[33m[WARNING] - Error writing to .env file: ", err, "\033[0m")
+
 		}
 	}
 
@@ -524,6 +529,7 @@ func (p *Plugin) Exec() error {
 	fmt.Println(lineBreak)
 	fmt.Println("| \033[1;36mPipeline HTML Generator Plugin Completed\033[0m")
 	fmt.Println(lineBreak)
+
 	return nil
 }
 
