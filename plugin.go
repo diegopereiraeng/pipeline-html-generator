@@ -440,13 +440,6 @@ func (p *Plugin) Exec() error {
 	fmt.Println(lineBreak)
 	fmt.Println("| \033[1;36mGetting last successful execution...\033[0m")
 	fmt.Println(lineBreak)
-	if repoName == "" {
-		fmt.Printf("| \033[1;36mService Name:\033[0m \033[1;32m%s\033[0m\n", serviceName)
-	} else {
-		fmt.Println("| Branch Name: ", branch)
-		fmt.Println("| Repo Name: ", repoName)
-	}
-	fmt.Println(lineBreak)
 	// Get the old and new commit hashes from the pipeline
 	var err error
 	pipeline, err = getExecutionDetails(accID, orgID, projectID, pipelineID, statusList, repoName, branch, serviceName)
@@ -469,7 +462,7 @@ func (p *Plugin) Exec() error {
 	} else {
 		fmt.Println("| \033[1;31mLast successful execution not found\033[0m")
 		fmt.Println(lineBreak)
-		return errors.New("Successful execution not found")
+		return errors.New("successful execution not found")
 	}
 
 	fmt.Println(lineBreak)
@@ -499,25 +492,12 @@ func (p *Plugin) Exec() error {
 		"PIPELINE_MESSAGE":     pipeline.Message,
 		"HTML_REPORT":          strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(dashHTML, "\n", ""), "	", ""), "		", ""), "<!DOCTYPE html>", ""),
 	}
-	if os.Getenv("DRONE_OUTPUT") == "" {
 
-		f, err := os.Create("PipelineHTMLGenerator.env")
-		if err != nil {
-			fmt.Println("Error:", err)
-			return err
-		}
+	err = writeEnvFile(vars, os.Getenv("DRONE_OUTPUT"))
+	if err != nil {
+		// return err
+		fmt.Println("| \033[33m[WARNING] - Error writing to .env file: ", err, "\033[0m")
 
-		for key, value := range vars {
-			f.WriteString(fmt.Sprintf("export %s='%s'\n", key, value))
-		}
-		defer f.Close()
-	} else {
-		err = writeEnvFile(vars, os.Getenv("DRONE_OUTPUT"))
-		if err != nil {
-			// return err
-			fmt.Println("| \033[33m[WARNING] - Error writing to .env file: ", err, "\033[0m")
-
-		}
 	}
 
 	fmt.Println(lineBreak)
@@ -537,44 +517,55 @@ func writeEnvFile(vars map[string]string, outputPath string) error {
 	// Create the directory if it doesn't exist
 	if outputPath == "" {
 		outputPath = "PipelineHTMLGenerator.env"
-	}
-
-	dir := filepath.Dir(outputPath)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		fmt.Println("Creating directory:", dir)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			fmt.Println("Error creating directory:", err)
+		f, err := os.Create(outputPath)
+		if err != nil {
+			fmt.Println("Error:", err)
 			return err
 		}
-	}
 
-	// Create the file if it doesn't exist
-	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-		fmt.Println("| Creating env file for Harness:", outputPath)
-		if _, err := os.Create(outputPath); err != nil {
-			fmt.Println("| \033[33m[WARNING] - Error creating file: ", err, "\033[0m")
+		for key, value := range vars {
+			f.WriteString(fmt.Sprintf("export %s='%s'\n", key, value))
+		}
+		defer f.Close()
+	} else {
+
+		dir := filepath.Dir(outputPath)
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			fmt.Println("Creating directory:", dir)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				fmt.Println("Error creating directory:", err)
+				return err
+			}
+		}
+
+		// Create the file if it doesn't exist
+		if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+			fmt.Println("| Creating env file for Harness:", outputPath)
+			if _, err := os.Create(outputPath); err != nil {
+				fmt.Println("| \033[33m[WARNING] - Error creating file: ", err, "\033[0m")
+				return err
+			}
+		}
+
+		// Use godotenv.Write() to write the vars map to the specified file
+		err := godotenv.Write(vars, outputPath)
+		if err != nil {
+			fmt.Println("| \033[33m[WARNING] Error writing to .env file: ", err, "\033[0m")
 			return err
 		}
+		fmt.Println("| Successfully wrote to .env file")
+
+		// // Read the file contents
+		// content, err := os.ReadFile(outputPath)
+		// if err != nil {
+		// 	fmt.Println("Error reading the .env file:", err)
+		// 	return err
+		// }
+
+		// Print the file contents
+		// fmt.Println("File contents:")
+		// fmt.Println(string(content))
 	}
-
-	// Use godotenv.Write() to write the vars map to the specified file
-	err := godotenv.Write(vars, outputPath)
-	if err != nil {
-		fmt.Println("| \033[33m[WARNING] Error writing to .env file: ", err, "\033[0m")
-		return err
-	}
-	fmt.Println("| Successfully wrote to .env file")
-
-	// // Read the file contents
-	// content, err := os.ReadFile(outputPath)
-	// if err != nil {
-	// 	fmt.Println("Error reading the .env file:", err)
-	// 	return err
-	// }
-
-	// Print the file contents
-	// fmt.Println("File contents:")
-	// fmt.Println(string(content))
 
 	return nil
 }
