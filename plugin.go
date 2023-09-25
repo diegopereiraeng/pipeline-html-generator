@@ -514,148 +514,69 @@ func (p *Plugin) Exec() error {
 }
 
 func writeEnvFile(vars map[string]string, outputPath string) error {
-	// Create the directory if it doesn't exist
 	if outputPath == "" {
-		outputPath = "PipelineHTMLGenerator.env"
-		f, err := os.Create(outputPath)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return err
-		}
+		return writeDefaultEnvFile(vars)
+	}
+	return writeSpecifiedEnvFile(vars, outputPath)
+}
 
-		for key, value := range vars {
-			f.WriteString(fmt.Sprintf("export %s='%s'\n", key, value))
-		}
-		defer f.Close()
-	} else {
+func writeDefaultEnvFile(vars map[string]string) error {
+	outputPath := "PipelineHTMLGenerator.env"
+	f, err := os.Create(outputPath)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return err
+	}
+	defer f.Close()
 
-		dir := filepath.Dir(outputPath)
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			fmt.Println("Creating directory:", dir)
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				fmt.Println("Error creating directory:", err)
-				return err
-			}
-		}
-
-		// Create the file if it doesn't exist
-		if _, err := os.Stat(outputPath); os.IsNotExist(err) {
-			fmt.Println("| Creating env file for Harness:", outputPath)
-			if _, err := os.Create(outputPath); err != nil {
-				fmt.Println("| \033[33m[WARNING] - Error creating file: ", err, "\033[0m")
-				return err
-			}
-		}
-
-		// Use godotenv.Write() to write the vars map to the specified file
-		err := godotenv.Write(vars, outputPath)
-		if err != nil {
-			fmt.Println("| \033[33m[WARNING] Error writing to .env file: ", err, "\033[0m")
-			return err
-		}
-		fmt.Println("| Successfully wrote to .env file")
-
-		// // Read the file contents
-		// content, err := os.ReadFile(outputPath)
-		// if err != nil {
-		// 	fmt.Println("Error reading the .env file:", err)
-		// 	return err
-		// }
-
-		// Print the file contents
-		// fmt.Println("File contents:")
-		// fmt.Println(string(content))
+	for key, value := range vars {
+		f.WriteString(fmt.Sprintf("export %s='%s'\n", key, value))
 	}
 
 	return nil
 }
 
-func parsePipeline(jsonData []byte) (*models.Pipeline, error) {
-	fmt.Println(lineBreak)
-	fmt.Println("| \033[1;36mParsing pipeline...\033[0m")
-	fmt.Println(lineBreak)
-
-	var response Response
-	err := json.Unmarshal(jsonData, &response)
-	if err != nil {
-		return nil, err
-	}
-	duration := time.Duration(response.Data.Content[0].EndTs-response.Data.Content[0].StartTs) * time.Millisecond
-	var durationStr string
-	if duration < time.Minute {
-		durationStr = fmt.Sprintf("%.0f seconds", duration.Seconds())
-	} else if duration < time.Hour {
-		durationStr = fmt.Sprintf("%.0f minutes", duration.Minutes())
-	} else {
-		hours := int(duration.Hours())
-		minutes := int(duration.Minutes()) % 60
-		durationStr = fmt.Sprintf("%d hours %d minutes", hours, minutes)
+func writeSpecifiedEnvFile(vars map[string]string, outputPath string) error {
+	if err := createDirIfNotExists(outputPath); err != nil {
+		return err
 	}
 
-	pipeline := models.Pipeline{
-		Name:        response.Data.Content[0].Name,
-		Status:      response.Data.Content[0].Status,
-		StartedTime: time.Unix(int64(response.Data.Content[0].StartTs/1000), 0).String(),
-		Duration:    durationStr,
-		StageCount:  response.Data.Content[0].TotalStagesCount,
-		StepCount:   response.Data.Content[0].SuccessfulStagesCount + response.Data.Content[0].FailedStagesCount,
-		Message:     "",
+	if err := createFileIfNotExists(outputPath); err != nil {
+		return err
 	}
 
-	layoutNodeMap := response.Data.Content[0].LayoutNodeMap
+	return writeVarsUsingGodotenv(vars, outputPath)
+}
 
-	for _, nodeInfo := range layoutNodeMap {
-		if nodeInfo.NodeGroup == "STAGE" {
-			stage := models.Stage{
-				Name:   nodeInfo.Name,
-				Module: nodeInfo.Module,
-			}
+func createDirIfNotExists(outputPath string) error {
+	dir := filepath.Dir(outputPath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		fmt.Println("Creating directory:", dir)
+		return os.MkdirAll(dir, 0755)
+	}
+	return nil
+}
 
-			for _, childId := range nodeInfo.EdgeLayoutList.CurrentNodeChildren {
-				childNodeInfo := layoutNodeMap[childId]
-				step := models.Step{
-					Name:   childNodeInfo.Name,
-					Status: childNodeInfo.Status,
-				}
-				stage.Steps = append(stage.Steps, step)
-			}
-
-			pipeline.Stages = append(pipeline.Stages, stage)
+func createFileIfNotExists(outputPath string) error {
+	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+		fmt.Println("| Creating env file for Harness:", outputPath)
+		_, err := os.Create(outputPath)
+		if err != nil {
+			fmt.Println("| \033[33m[WARNING] - Error creating file:", err, "\033[0m")
 		}
+		return err
 	}
+	return nil
+}
 
-	fmt.Println(lineBreak)
-	fmt.Println("| \033[1;36mPipeline Info\033[0m")
-	fmt.Println(lineBreak)
-	fmt.Printf("| \033[1;36mPipeline Name:\033[0m \033[1;32m%s\033[0m\n", pipeline.Name)
-	fmt.Printf("| \033[1;36mPipeline Status:\033[0m \033[1;32m%s\033[0m\n", pipeline.Status)
-	fmt.Printf("| \033[1;36mPipeline Started Time:\033[0m \033[1;32m%s\033[0m\n", pipeline.StartedTime)
-	fmt.Printf("| \033[1;36mPipeline Duration:\033[0m \033[1;32m%s\033[0m\n", pipeline.Duration)
-	fmt.Printf("| \033[1;36mPipeline Stage Count:\033[0m \033[1;32m%d\033[0m\n", pipeline.StageCount)
-	fmt.Printf("| \033[1;36mPipeline Step Count:\033[0m \033[1;32m%d\033[0m\n", pipeline.StepCount)
-	fmt.Printf("| \033[1;36mPipeline Message:\033[0m \033[1;32m%s\033[0m\n", pipeline.Message)
-	fmt.Println(lineBreak)
-	fmt.Println("| \033[1;36mPipeline Stages\033[0m")
-	fmt.Println(lineBreak)
-	for _, stage := range pipeline.Stages {
-		fmt.Printf("| \033[1;36mStage Name:\033[0m \033[1;32m%s\033[0m\n", stage.Name)
-		fmt.Printf("| \033[1;36mStage Module:\033[0m \033[1;32m%s\033[0m\n", stage.Module)
-
-		// fmt.Printf("| \033[1;36mStage Step Count:\033[0m \033[1;32m%d\033[0m\n", len(stage.Steps))
-		fmt.Println(lineBreak)
-		// fmt.Println("| \033[1;36mStage Steps\033[0m")
-		// fmt.Println(lineBreak)
-		// for _, step := range stage.Steps {
-		// 	fmt.Printf("| \033[1;36mStep Name:\033[0m \033[1;32m%s\033[0m\n", step.Name)
-		// 	fmt.Printf("| \033[1;36mStep Status:\033[0m \033[1;32m%s\033[0m\n", step.Status)
-		// 	fmt.Printf("| \033[1;36mStep Message:\033[0m \033[1;32m%s\033[0m\n", step.Message)
-		// 	fmt.Println(lineBreak)
-		// }
+func writeVarsUsingGodotenv(vars map[string]string, outputPath string) error {
+	err := godotenv.Write(vars, outputPath)
+	if err != nil {
+		fmt.Println("| \033[33m[WARNING] Error writing to .env file:", err, "\033[0m")
+		return err
 	}
-
-	fmt.Println(" Json: ", pipeline)
-
-	return &pipeline, nil
+	fmt.Println("| Successfully wrote to .env file")
+	return nil
 }
 
 // func Parse models.PayloadSteps(jsonData []byte) (* models.PayloadSteps, error) {
