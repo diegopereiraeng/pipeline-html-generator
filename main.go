@@ -67,6 +67,11 @@ func main() {
 			Usage:  "Provide a custom Harness execution URL, or it gonna take the current pipeline execution URL",
 			EnvVar: "CI_BUILD_LINK, PLUGIN_HARNESS_PIPE_EXECUTION_URL",
 		},
+		cli.BoolFlag{
+			Name:   "skip_skipped",
+			Usage:  "Skip skipped stages/steps",
+			EnvVar: "PLUGIN_SKIP_SKIPPED",
+		},
 	}
 	app.Run(os.Args)
 }

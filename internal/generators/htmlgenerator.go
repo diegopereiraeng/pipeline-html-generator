@@ -156,6 +156,7 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 			max-height: 90vh;
 			margin: 10px 20px;
 			padding: 20px;
+			height: fit-content;
 		}
 		.pipeline-title {
 			background-color: #00ABE3;
@@ -180,6 +181,7 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 			overflow-x: auto;
 			overflow-y: auto;
 			padding: 10px;
+			max-height: 100vh;
 		}
 		.stage {
 			background-color: #f8f8f8;
