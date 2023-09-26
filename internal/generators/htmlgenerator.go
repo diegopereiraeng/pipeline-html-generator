@@ -151,7 +151,6 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 			border-radius: 10px;
 			box-shadow: 0 0 10px rgba(0,0,0,0.1);
 			overflow-x: auto;
-			overflow-y: auto;
 			max-width: 90%;
 			max-height: 90vh;
 			margin: 10px 20px;
