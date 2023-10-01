@@ -76,7 +76,7 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 		}
 		duration := endTime.Sub(startTime)
 
-		if duration < time.Minute {
+		if duration < 2*time.Minute {
 			pipeline.Stages[i].Duration = fmt.Sprintf("%.0f seconds", duration.Seconds())
 		} else if duration < time.Hour {
 			pipeline.Stages[i].Duration = fmt.Sprintf("%.0f minutes", duration.Minutes())
@@ -123,7 +123,7 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 				days := int(duration.Hours()) / 24
 				pipeline.Stages[i].Steps[j].Duration = fmt.Sprintf("%d days", days)
 			} else if duration > time.Hour*24*365 {
-				pipeline.Stages[i].Steps[j].Duration = fmt.Sprintf("None")
+				pipeline.Stages[i].Steps[j].Duration = fmt.Sprintln("None")
 			} else {
 				days := int(duration.Hours()) / 24
 				hours := int(duration.Hours()) % 24
@@ -186,8 +186,8 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 			background-color: #f8f8f8;
 			border: 1px solid #ccc;
 			border-radius: 5px;
-			padding: 10px;
-			margin: 0 10px;
+			padding: 2px 8px 8px 8px; /* Adjusted padding accordingly */
+			margin: 0 5px;
 			box-shadow: 0 0 5px rgba(0,0,0,0.1);
 			flex: 0 1 auto;
 			width: 200px;  /* Increased width to accommodate the full width of steps */
@@ -203,17 +203,26 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 			font-size: 12px; /* Consider increasing if text appears too small */
 		}
 		.step {
+			text-align: center;
 			display: block; /* Ensures it takes the full width available and stacks vertically */
 			background-color: #fff;
 			border: 1px solid #ccc;
 			border-radius: 5px;
-			padding: 8px;
-			margin: 8px 0; /* Maintaining vertical margins */
+			padding: 8px 8px 8px 8px; /* Adjusted padding accordingly */
+			margin: 5px 0; /* Maintaining vertical margins */
 			box-shadow: 0 0 5px rgba(0,0,0,0.1);
 			width: 100%; /* Set to 100% to occupy the full width of the step container */
 			max-width: 100%; /* Set to 100% to prevent horizontal stretching */
 		}
-		
+		.center {
+			text-align: center;
+		}
+
+		h4.center {
+			margin-top: 0;  /* remove the top margin */
+			margin-bottom: 0;  /* remove the bottom margin */
+			text-align: center;
+		}
 		
 		.green {
 			background-color: rgba(40, 167, 69, 0.1);
@@ -255,7 +264,8 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 			Duration: {{ .Duration }}<br>
 			Stage Count: {{ .StageCount }}<br>
 			Step Count: {{ .StepCount }}<br>
-			{{ if .Message }}Message: {{ .Message }}{{ end }}
+			{{ if .Message }}Error: {{ .Message }}{{ end }}
+			ExecutionLink: <a href="{{ .ExecutionLink }}">Click Here!</a>
 		</div>
 		<div class="stage-container">
 			{{ range .Stages }}
@@ -265,10 +275,11 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 				<div class="step-container">
 					{{ range .Steps }}
 					<div class="step {{ .Status }}">
-						<h4>{{ .Name }}</h4>
-						{{ if .Message }}<p>Message: {{ .Message }}</p>{{ end }}
-						{{ if ne .Status "skipped" }}<p>Duration: {{ .Duration }}</p>{{ end }}
-						{{ if eq .Status "failure" }}<p>Error: {{ .FailureInfo.Message }}</p><p>Failure Types: {{ range .FailureInfo.FailureTypeList }}{{ . }} {{ end }}</p>{{ end }}
+						<h4 class="center">{{ .Name }}</h4>
+						{{ if ne .Status "Success" }}<br>Status: {{ .Status }}<br>{{ end }}
+						{{ if ne .Status "Skipped" }}<br>Duration: {{ .Duration }}{{ end }}
+						{{ if .Message }}<p>Error:</p><b>{{ .Message }}</b>{{ end }}
+						{{ if eq .Status "Failed" }}<p>Failure Types:</p><b>{{ range .FailureInfo.FailureTypeList }}</p>{{ . }}</b> {{ end }}{{ end }}
 					</div>
 					{{ end }}
 				</div>
@@ -281,14 +292,16 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 	`
 
 	dataMap := map[string]interface{}{
-		"Name":        pipeline.Name,
-		"Status":      pipeline.Status,
-		"StartedTime": pipeline.StartedTime,
-		"Duration":    pipeline.Duration,
-		"StageCount":  pipeline.StageCount,
-		"StepCount":   pipeline.StepCount,
-		"Message":     pipeline.Message,
-		"Stages":      pipeline.Stages,
+		"Name":          pipeline.Name,
+		"Status":        pipeline.Status,
+		"StartedTime":   pipeline.StartedTime,
+		"Duration":      pipeline.Duration,
+		"StageCount":    pipeline.StageCount,
+		"StepCount":     pipeline.StepCount,
+		"Message":       pipeline.Message,
+		"Stages":        pipeline.Stages,
+		"ExecutionLink": pipeline.ExecutionLink,
+		"ExecutionId":   pipeline.ExecutionId,
 	}
 
 	tmpl, err := template.New("dashboard").Parse(htmlTemplate)

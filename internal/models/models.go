@@ -5,14 +5,16 @@ package models
 
 // Pipeline represents a pipeline with its stages and steps.
 type Pipeline struct {
-	Name        string  `json:"name"`
-	Status      string  `json:"status"`
-	StartedTime string  `json:"startedTime"`
-	Duration    string  `json:"duration"`
-	StageCount  int     `json:"stageCount"`
-	StepCount   int     `json:"stepCount"`
-	Message     string  `json:"message"`
-	Stages      []Stage `json:"stages"`
+	Name          string  `json:"name"`
+	Status        string  `json:"status"`
+	StartedTime   string  `json:"startedTime"`
+	Duration      string  `json:"duration"`
+	StageCount    int     `json:"stageCount"`
+	StepCount     int     `json:"stepCount"`
+	Message       string  `json:"message"`
+	Stages        []Stage `json:"stages"`
+	ExecutionLink string  `json:"executionLink"`
+	ExecutionId   string  `json:"executionId"`
 }
 
 // Stage represents a stage in a pipeline with its steps.
@@ -28,12 +30,16 @@ type Stage struct {
 
 // Step represents a step in a stage.
 type Step struct {
-	Name     string `json:"name"`
-	Status   string `json:"status"`
-	Message  string `json:"message"`
-	StartTs  string `json:"startTs"`
-	EndTs    string `json:"endTs"`
-	Duration string `json:"duration"`
+	Name        string `json:"name"`
+	Status      string `json:"status"`
+	Message     string `json:"message"`
+	StartTs     string `json:"startTs"`
+	EndTs       string `json:"endTs"`
+	Duration    string `json:"duration"`
+	FailureInfo struct {
+		Message         string   `json:"message"`
+		FailureTypeList []string `json:"failureTypeList"`
+	} `json:"failureInfo"`
 }
 
 // steps parsing

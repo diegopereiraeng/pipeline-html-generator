@@ -236,6 +236,7 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 			StageCount:  0,
 			StepCount:   0,
 			Message:     "",
+			ExecutionId: content.PlanExecutionId,
 		}
 
 		// content := response.Data.Content[0]
@@ -287,7 +288,7 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 				return models.Pipeline{}, errors.New("error parsing JSON Stage Details response from Harness API Pipeline Executions")
 			}
 			// also check if number of step is less than 1 (payloadSteps.Data.ExecutionGraph.NodeMap[])
-			if nodeInfo.Name != "" && nodeInfo.NodeType != "STEP_GROUP" && nodeInfo.NodeType != "NG_FORK" && nodeInfo.NodeType != "ROLLBACK_OPTIONAL_CHILD_CHAIN" && nodeInfo.Status != "NotStarted" {
+			if nodeInfo.Name != "" && nodeInfo.NodeType != "STEP_GROUP" && nodeInfo.NodeType != "NG_FORK" && nodeInfo.NodeType != "ROLLBACK_OPTIONAL_CHILD_CHAIN" && nodeInfo.Status != "NotStarted" && nodeInfo.Status != "Skipped" {
 
 				var startTS string
 				var endTS string
@@ -335,7 +336,7 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 						fmt.Printf("| \033[1;36mStep Failure Type List:\033[0m \033[1;32m%s\033[0m\n", node.FailureInfo.FailureTypeList)
 					}
 					fmt.Println(lineBreak)
-					if node.Identifier != "execution" && node.Name != "parallel" && node.Name != "liteEngineTask" && node.StepType != "STEP_GROUP" && node.StepType != "NG_FORK" && node.StepType != "ROLLBACK_OPTIONAL_CHILD_CHAIN" && node.StepType != "IntegrationStageStepPMS" {
+					if node.Identifier != "execution" && node.Name != "parallel" && node.Name != "liteEngineTask" && node.StepType != "STEP_GROUP" && node.StepType != "NG_FORK" && node.StepType != "ROLLBACK_OPTIONAL_CHILD_CHAIN" && node.StepType != "IntegrationStageStepPMS" && node.Status != "NotStarted" && node.Status != "Skipped" {
 						var startTS string
 						var endTS string
 						var duration string
@@ -370,12 +371,13 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 						}
 
 						pipeline.Stages[pipeline.StageCount].Steps = append(pipeline.Stages[pipeline.StageCount].Steps, models.Step{
-							Name:     node.Name,
-							Status:   status,
-							Message:  message,
-							StartTs:  startTS,
-							EndTs:    endTS,
-							Duration: duration,
+							Name:        node.Name,
+							Status:      status,
+							Message:     message,
+							StartTs:     startTS,
+							EndTs:       endTS,
+							Duration:    duration,
+							FailureInfo: node.FailureInfo,
 						})
 						pipeline.StepCount++
 					}
@@ -475,7 +477,9 @@ func (p *Plugin) Exec() error {
 	}
 
 	fmt.Println(lineBreak)
-
+	// Create USer Execution Link
+	executionLink := "https://app.harness.io/ng/account/" + accID + "/ci/orgs/" + orgID + "/projects/" + projectID + "/pipelines/" + pipelineID + "/deployments/" + pipeline.ExecutionId + "/pipeline"
+	pipeline.ExecutionLink = executionLink
 	dashHTML, err := htmlgenerator.GenerateDashboardHTML(pipeline)
 	if err != nil {
 		return err
