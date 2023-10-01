@@ -257,6 +257,7 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 					{{ range .Steps }}
 					<div class="step {{ .Status }}">
 						<h4>{{ .Name }}</h4>
+						<p>Status: {{ .Status }}</p>
 						{{ if .Message }}<p>Message: {{ .Message }}</p>{{ end }}
 						{{ if ne .Status "skipped" }}<p>Duration: {{ .Duration }}</p>{{ end }}
 						{{ if eq .Status "failure" }}<p>Error: {{ .FailureInfo.Message }}</p><p>Failure Types: {{ range .FailureInfo.FailureTypeList }}{{ . }} {{ end }}</p>{{ end }}
