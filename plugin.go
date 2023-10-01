@@ -344,8 +344,12 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 							endTS = ""
 							duration = "0s"
 						} else {
+							if node.Status == "Running" || node.Status == "AsyncWaiting" {
+								endTS = strconv.Itoa(int(time.Now().UnixNano() / int64(time.Millisecond)))
+							} else {
+								endTS = time.Unix(int64(node.EndTs/1000), 0).String()
+							}
 							startTS = time.Unix(int64(node.StartTs/1000), 0).String()
-							endTS = time.Unix(int64(node.EndTs/1000), 0).String()
 							duration = time.Unix(int64(node.EndTs/1000), 0).Sub(time.Unix(int64(node.StartTs/1000), 0)).String()
 						}
 
@@ -354,7 +358,7 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 							status = node.Status
 						} else if node.Status == "Success" && node.FailureInfo.Message != "" {
 							message = "Ignored Error"
-							status = "Success - Error Ignored"
+							// status = "Success - Error Ignored"
 						} else {
 							message = node.FailureInfo.Message
 							status = node.Status

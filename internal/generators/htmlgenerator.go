@@ -152,7 +152,7 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 			box-shadow: 0 0 10px rgba(0,0,0,0.1);
 			overflow-x: auto;
 			max-width: 90%;
-			max-height: 90vh;
+			max-height: 120vh;
 			margin: 10px 20px;
 			padding: 20px;
 			height: fit-content;
@@ -180,7 +180,7 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 			overflow-x: auto;
 			overflow-y: auto;
 			padding: 10px;
-			max-height: 100vh;
+			max-height: 110vh;
 		}
 		.stage {
 			background-color: #f8f8f8;
@@ -236,6 +236,15 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 		.Aborted {
 			background-color: rgba(255, 87, 51, 0.5); /* Red with Transparency */
 		}
+		.Running {
+			/* Blue with Transparency */
+			background-color: rgba(0, 123, 255, 0.5);
+		}
+		.AsyncWaiting {
+			/* yellow with Transparency */
+			background-color: rgba(255, 193, 7, 0.5);
+		}
+
 		</style>
 	</head>
 	<body>
@@ -257,7 +266,6 @@ func GenerateDashboardHTML(pipeline models.Pipeline) (string, error) {
 					{{ range .Steps }}
 					<div class="step {{ .Status }}">
 						<h4>{{ .Name }}</h4>
-						<p>Status: {{ .Status }}</p>
 						{{ if .Message }}<p>Message: {{ .Message }}</p>{{ end }}
 						{{ if ne .Status "skipped" }}<p>Duration: {{ .Duration }}</p>{{ end }}
 						{{ if eq .Status "failure" }}<p>Error: {{ .FailureInfo.Message }}</p><p>Failure Types: {{ range .FailureInfo.FailureTypeList }}{{ . }} {{ end }}</p>{{ end }}
