@@ -287,7 +287,7 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 				return models.Pipeline{}, errors.New("error parsing JSON Stage Details response from Harness API Pipeline Executions")
 			}
 			// also check if number of step is less than 1 (payloadSteps.Data.ExecutionGraph.NodeMap[])
-			if nodeInfo.Name != "" && nodeInfo.NodeType != "STEP_GROUP" && nodeInfo.NodeType != "NG_FORK" && nodeInfo.NodeType != "ROLLBACK_OPTIONAL_CHILD_CHAIN" && payloadSteps.Data.ExecutionGraph.NodeMap
+			if nodeInfo.Name != "" && nodeInfo.NodeType != "STEP_GROUP" && nodeInfo.NodeType != "NG_FORK" && nodeInfo.NodeType != "ROLLBACK_OPTIONAL_CHILD_CHAIN" && nodeInfo.Status != "NotStarted" {
 
 				var startTS string
 				var endTS string
@@ -348,7 +348,8 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 						} else {
 							startTS = time.Unix(int64(node.StartTs/1000), 0).String()
 							if node.Status == "Running" || node.Status == "AsyncWaiting" {
-								endTS = time.Unix(int(time.Now().UnixNano() / int64(time.Millisecond)), 0)
+								endTS = time.Unix(0, time.Now().UnixNano()).String()
+								node.EndTs = time.Now().UnixNano() / int64(time.Millisecond)
 								duration = time.Unix(int64(time.Now().UnixNano()/1000), 0).Sub(time.Unix(int64(node.StartTs/1000), 0)).String()
 							} else {
 								endTS = time.Unix(int64(node.EndTs/1000), 0).String()
