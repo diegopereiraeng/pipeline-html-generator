@@ -297,10 +297,11 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 					startTS = ""
 					endTS = ""
 					duration = "0s"
-				} else if nodeInfo.Status == "Running" {
+				} else if nodeInfo.Status == "Running" || nodeInfo.Status == "AsyncWaiting" {
 					nodeInfo.EndTs = int(time.Now().UnixNano() / int64(time.Millisecond))
 					startTS = time.Unix(int64(nodeInfo.StartTs/1000), 0).String()
-					duration = time.Unix(int64(nodeInfo.EndTs/1000), 0).Sub(time.Unix(int64(nodeInfo.StartTs/1000), 0)).String()
+					// use now as end time
+					duration = time.Unix(int64(time.Now().UnixNano()/1000), 0).Sub(time.Unix(int64(nodeInfo.StartTs/1000), 0)).String()
 				} else {
 					startTS = time.Unix(int64(nodeInfo.StartTs/1000), 0).String()
 					endTS = time.Unix(int64(nodeInfo.EndTs/1000), 0).String()
@@ -344,13 +345,15 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 							endTS = ""
 							duration = "0s"
 						} else {
+							startTS = time.Unix(int64(node.StartTs/1000), 0).String()
 							if node.Status == "Running" || node.Status == "AsyncWaiting" {
 								endTS = strconv.Itoa(int(time.Now().UnixNano() / int64(time.Millisecond)))
+								duration = time.Unix(int64(time.Now().UnixNano()/1000), 0).Sub(time.Unix(int64(node.StartTs/1000), 0)).String()
 							} else {
 								endTS = time.Unix(int64(node.EndTs/1000), 0).String()
+								duration = time.Unix(int64(node.EndTs/1000), 0).Sub(time.Unix(int64(node.StartTs/1000), 0)).String()
 							}
-							startTS = time.Unix(int64(node.StartTs/1000), 0).String()
-							duration = time.Unix(int64(node.EndTs/1000), 0).Sub(time.Unix(int64(node.StartTs/1000), 0)).String()
+
 						}
 
 						if node.Status != "Success" && node.FailureInfo.Message != "" {
