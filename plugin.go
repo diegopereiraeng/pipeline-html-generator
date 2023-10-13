@@ -456,6 +456,7 @@ func (p *Plugin) Exec() error {
 	pipeline, err = getExecutionDetails(accID, orgID, projectID, pipelineID, statusList, repoName, branch, serviceName)
 	if err != nil {
 		fmt.Println(" | \033[1;31mError getting execution details\033[0m")
+		fmt.Println(" | \033[1;31mError: ", err, "\033[0m")
 		// return err
 	}
 	fmt.Println(lineBreak)

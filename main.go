@@ -45,7 +45,7 @@ func main() {
 		cli.StringFlag{
 			Name:   "repo_name",
 			Usage:  "sonarqube-scanner",
-			EnvVar: "DRONE_REPO_NAME, PLUGIN_REPO_NAME",
+			EnvVar: "PLUGIN_REPO_NAME, DRONE_REPO_NAME",
 		},
 		cli.StringFlag{
 			Name:   "branch",
