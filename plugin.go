@@ -278,9 +278,12 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 
 			bodySteps, err := io.ReadAll(resSteps.Body)
 
+
 			if err != nil {
 				return models.Pipeline{}, err
 			}
+			
+			fmt.Printf("Response Execution Details for stage %s: \n%s",nodeInfo.Name,bodySteps)
 
 			// fmt.Printf("| \033[1;36mResponse Body:\033[0m \033[1;32m%s\033[0m\n", string(bodySteps))
 			defer resSteps.Body.Close()
