@@ -145,6 +145,8 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 	url := "https://app.harness.io/pipeline/api/pipelines/execution/summary?page=0&size=1&accountIdentifier=" + accID + "&orgIdentifier=" + orgID + "&projectIdentifier=" + projectID + "&pipelineIdentifier=" + pipelineID + ""
 	method := "POST"
 
+	fmt.Println("Fetching Pipeline Execution Details on URL: ", url)
+
 	var statusListJson string
 	statusListJsonBytes, err := json.Marshal(statusList)
 	if err != nil {
@@ -154,6 +156,7 @@ func getExecutionDetails(accID string, orgID string, projectID string, pipelineI
 
 	payload := strings.NewReader(fmt.Sprintf(`{"status":%s,"moduleProperties":{"ci":{"branch":"%s","repoName":"%s"}},"filterType":"PipelineExecution"}`, statusListJson, branch, repoName))
 
+	fmt.Println("Body: ", payload)
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, payload)
 
